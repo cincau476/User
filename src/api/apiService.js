@@ -1,0 +1,101 @@
+import axios from 'axios';
+
+// 1. Tentukan URL dasar backend
+// Ini adalah alamat server Django Anda
+export const BASE_URL = 'http://localhost:8000';
+
+// 2. Tentukan URL API (dengan '/api' jika Anda menambahkannya di urls.py utama)
+// Berdasarkan file urls.py Anda, sepertinya Anda TIDAK menggunakan /api/
+// Jadi kita akan gunakan BASE_URL saja.
+// Mari kita cek...
+// urls.py Anda mendaftarkan 'stands', 'create/', dll. di root.
+// Jadi, API_URL adalah BASE_URL itu sendiri.
+const API_URL = 'http://localhost:8000';
+
+
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  // Penting untuk mengirim 'session cookie' (untuk IsGuestOrderOwner)
+  withCredentials: true, 
+});
+
+/**
+ * Mengambil daftar semua stand (tenant)
+ * LIVE - Terhubung ke StandViewSet
+ */
+export const getStands = () => {
+  return apiClient.get('/stands/'); 
+};
+
+/**
+ * Mengambil detail satu stand (MOCK)
+ * LIVE - Terhubung ke StandViewSet (retrieve)
+ */
+export const getStandDetails = (standId) => {
+  return apiClient.get(`/stands/${standId}/`);
+};
+
+/**
+ * Mengambil list menu untuk satu stand (MOCK)
+ * LIVE - Terhubung ke MenuItemViewSet
+ */
+export const getMenuForStand = (standId) => {
+  // Ini memanggil rute nested: /stands/<stand_pk>/menus/
+  return apiClient.get(`/stands/${standId}/menus/`);
+};
+
+/**
+ * Membuat pesanan baru
+ * LIVE - Terhubung ke CreateOrderView
+ */
+export const createOrder = (orderData) => {
+  // orderData HARUS cocok dengan OrderCreateSerializer
+  return apiClient.post('/create/', orderData); 
+};
+
+/**
+ * Mengambil detail pesanan (MOCK)
+ * LIVE - Terhubung ke OrderDetailView
+ */
+export const getOrderDetails = (orderUuid) => {
+  // Ini memanggil /<uuid:order_uuid>/
+  return apiClient.get(`/${orderUuid}/`);
+};
+
+/**
+ * Membatalkan pesanan (MOCK)
+ * LIVE - Terhubung ke CancelOrderView
+ */
+export const cancelOrder = (orderUuid) => {
+  // Ini memanggil /<uuid:order_uuid>/cancel/
+  return apiClient.post(`/${orderUuid}/cancel/`);
+};
+
+
+// --- FUNGSI MOCK (BELUM ADA DI BACKEND) ---
+
+/**
+ * Mengambil menu-menu populer
+ * !!! MASIH MOCK !!!
+ * Backend Anda tidak memiliki endpoint untuk ini.
+ */
+export const getPopularMenus = () => {
+  console.warn("Menggunakan data MOCK untuk Popular Menus.");
+  
+  const mockPopularMenus = [
+    {
+      id: 1, // Ganti dengan ID menu sungguhan jika ada
+      name: 'Ayam Kawin (Mock)',
+      tenant: { id: 1, name: 'Warung Pecah Sebelah' }, // Pastikan tenant ID 1 ada
+      imageUrl: '/src/assets/mock/ayam-kawin.jpg', // Ini akan gagal
+    },
+    // ... data mock lainnya
+  ];
+
+  return Promise.resolve({ data: mockPopularMenus });
+};
+
+export default apiClient;
