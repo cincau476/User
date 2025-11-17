@@ -1,3 +1,4 @@
+// src/components/QuantityStepper.jsx
 import React from 'react';
 
 const IconMinus = () => (
@@ -12,15 +13,19 @@ const IconPlus = () => (
   </svg>
 );
 
-export default function QuantityStepper({ quantity, setQuantity }) {
-  const decrement = () => setQuantity(q => Math.max(1, q - 1));
+// Tambahkan prop 'minQuantity' dengan default 1
+export default function QuantityStepper({ quantity, setQuantity, minQuantity = 1 }) {
+  
+  // Gunakan 'minQuantity' di sini
+  const decrement = () => setQuantity(q => Math.max(minQuantity, q - 1));
   const increment = () => setQuantity(q => q + 1);
 
   return (
     <div className="flex items-center gap-4">
       <button 
         onClick={decrement} 
-        disabled={quantity <= 1}
+        // Gunakan 'minQuantity' di sini
+        disabled={quantity <= minQuantity}
         className="bg-gray-700 p-2 rounded-full text-white disabled:opacity-50"
       >
         <IconMinus />

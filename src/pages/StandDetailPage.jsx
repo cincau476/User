@@ -1,5 +1,6 @@
+// src/pages/StandDetailPage.jsx
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import StandHeader from '../components/StandHeader';
 import SearchBar from '../components/SearchBar';
@@ -10,48 +11,62 @@ import StickyCartFooter from '../components/StickyCartFooter';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { getStandDetails, getMenuForStand, createOrder } from '../api/apiService';
 
+// Impor untuk fitur keranjang
+import CartDetailModal from '../components/CartDetailModal'; 
+import { v4 as uuidv4 } from 'uuid';
+
 export default function StandDetailPage() {
   const { standId } = useParams(); 
-  const navigate = useNavigate(); // Inisialisasi useNavigate
+  const navigate = useNavigate();
   const [stand, setStand] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // State untuk Keranjang
   const [cart, setCart] = useState([]);
   
-  // State untuk Modal
   const [currentItem, setCurrentItem] = useState(null);
   const [isSimpleModalOpen, setSimpleModalOpen] = useState(false);
   const [isCustomizeModalOpen, setCustomizeModalOpen] = useState(false);
   const [isConfirmationModalOpen, setConfirmationModalOpen] = useState(false);
+  const [isCartDetailModalOpen, setCartDetailModalOpen] = useState(false); 
 
+  // +++ INI ADALAH PERBAIKAN PENTING +++
   // Muat data menu & stand
   useEffect(() => {
     const loadData = async () => {
       try {
-        setLoading(true);
+        setLoading(true); // Pastikan loading true di awal
         const [standResponse, menuResponse] = await Promise.all([
           getStandDetails(standId),
-          getMenuForStand(standId)
+          getMenuForStand(standId) // Ini memanggil MenuItemViewSet
         ]);
         setStand(standResponse.data);
         setMenuItems(menuResponse.data);
+        setError(null); // Hapus error jika sukses
       } catch (err) {
         console.error("Gagal memuat data:", err);
         setError("Gagal memuat data stand. Coba lagi nanti.");
       } finally {
-        setLoading(false);
+        setLoading(false); // Pastikan loading false di akhir
       }
     };
+    
     loadData();
-  }, [standId]);
+  }, [standId]); // Dependency array
+  // +++ AKHIR PERBAIKAN PENTING +++
 
   // --- Handler Modal Item ---
   const handleCardClick = (menuItem) => {
     setCurrentItem(menuItem);
-    setSimpleModalOpen(true); // Selalu buka modal sederhana dulu
+    // Cek jika item punya varian
+    const hasVariants = menuItem.variant_groups && menuItem.variant_groups.length > 0;
+    
+    if (hasVariants) {
+      setCustomizeModalOpen(true); // Langsung buka modal kustomisasi
+    } else {
+      setSimpleModalOpen(true); // Buka modal simpel
+    }
   };
 
   const handleCloseSimpleModal = () => {
@@ -64,31 +79,50 @@ export default function StandDetailPage() {
     setCurrentItem(null);
   };
 
-  // Dipanggil dari modal sederhana jika item punya varian
-  const handleCustomize = (menuItem) => {
-    setSimpleModalOpen(false); // Tutup modal simple
-    setCustomizeModalOpen(true); // Buka modal kustomisasi
-  };
-
-  // Dipanggil dari kedua modal (Simple/Customize)
   const handleAddToCart = (itemData) => {
-    // TODO: Logika untuk menggabungkan item jika sudah ada di keranjang
-    setCart(prevCart => [...prevCart, itemData]);
-    
-    // Tutup semua modal item
+    const itemWithId = {
+      ...itemData,
+      cartItemUniqueId: uuidv4() 
+    };
+    setCart(prevCart => [...prevCart, itemWithId]);
     setSimpleModalOpen(false);
     setCustomizeModalOpen(false);
     setCurrentItem(null);
   };
 
-  // --- Handler Modal Konfirmasi ---
+  // --- Handler untuk CartDetailModal ---
+  const handleOpenCartDetail = () => {
+    setCartDetailModalOpen(true);
+  };
+
+  const handleCloseCartDetail = () => {
+    setCartDetailModalOpen(false);
+  };
+
+  const handleUpdateCart = (cartItemUniqueId, newQuantity) => {
+    if (newQuantity <= 0) {
+      setCart(prevCart => prevCart.filter(item => item.cartItemUniqueId !== cartItemUniqueId));
+    } else {
+      setCart(prevCart => prevCart.map(item => {
+        if (item.cartItemUniqueId === cartItemUniqueId) {
+          const pricePerUnit = item.totalPrice / item.quantity;
+          return {
+            ...item,
+            quantity: newQuantity,
+            totalPrice: pricePerUnit * newQuantity
+          };
+        }
+        return item;
+      }));
+    }
+  };
   
-  // Dipanggil dari StickyCartFooter
-  const handleOpenConfirmation = () => {
+  const handleCheckoutFromCart = () => {
+    handleCloseCartDetail();
     setConfirmationModalOpen(true);
   };
 
-  // Dipanggil dari ConfirmationModal
+  // --- Handler Modal Konfirmasi ---
   const handleConfirmOrder = async (formData) => {
     if (!stand) return;
 
@@ -101,44 +135,42 @@ export default function StandDetailPage() {
           menu_item: item.menuItemId,
           qty: item.quantity,
           variants: item.selectedVariantIds || [],
-          price: item.price // Diperlukan untuk MOCK createOrder
+          note: item.notes || ''
       }))
     };
     
     try {
-      setLoading(true); // Tampilkan loading
-      const response = await createOrder(payload); // Panggil MOCK API
+      setLoading(true); 
+      const response = await createOrder(payload);
       
-      // Ambil UUID dari respon
       const newOrderUuid = response.data.order.uuid;
       
-      // **REDIRECT KE HALAMAN STATUS**
       navigate(`/order-status/${newOrderUuid}`);
       
-      // Kosongkan keranjang
       setCart([]);
       setConfirmationModalOpen(false);
       
     } catch (err) {
       console.error("Gagal membuat pesanan:", err);
-      alert("Maaf, terjadi kesalahan saat membuat pesanan.");
+      const errorDetail = err.response?.data?.detail || err.response?.data[0] || "Maaf, terjadi kesalahan saat membuat pesanan.";
+      alert(errorDetail);
     } finally {
       setLoading(false);
     }
   };
 
-
   // --- Render ---
-  if (loading && !isConfirmationModalOpen) { // Jangan tunjukkan loading halaman saat loading pesanan
+  // (Render loading & error)
+  if (loading && !isConfirmationModalOpen) { 
     return <Layout><p className="text-center">Memuat...</p></Layout>;
   }
   if (error) {
     return <Layout><p className="text-center text-red-400">{error}</p></Layout>;
   }
 
+  // (Render Halaman)
   return (
     <Layout>
-      {/* Tambahkan padding-bottom agar tidak tertutup sticky footer */}
       <div className="pb-32">
         <StandHeader stand={stand} />
         
@@ -166,7 +198,6 @@ export default function StandDetailPage() {
         <SimpleAddItemModal 
           menuItem={currentItem} 
           onClose={handleCloseSimpleModal}
-          onCustomize={handleCustomize}
           onAddToCart={handleAddToCart}
         />
       )}
@@ -179,11 +210,19 @@ export default function StandDetailPage() {
         />
       )}
       
-      {/* Footer Keranjang (Hanya muncul jika ada isi & modal lain tertutup) */}
-      {cart.length > 0 && !isSimpleModalOpen && !isCustomizeModalOpen && !isConfirmationModalOpen && (
+      {cart.length > 0 && !isSimpleModalOpen && !isCustomizeModalOpen && !isConfirmationModalOpen && !isCartDetailModalOpen && (
         <StickyCartFooter 
           cart={cart}
-          onClick={handleOpenConfirmation}
+          onClick={handleOpenCartDetail} 
+        />
+      )}
+      
+      {isCartDetailModalOpen && (
+        <CartDetailModal
+          cart={cart}
+          onClose={handleCloseCartDetail}
+          onUpdateCart={handleUpdateCart}
+          onCheckout={handleCheckoutFromCart}
         />
       )}
       

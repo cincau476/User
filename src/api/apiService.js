@@ -83,19 +83,11 @@ export const cancelOrder = (orderUuid) => {
  * Backend Anda tidak memiliki endpoint untuk ini.
  */
 export const getPopularMenus = () => {
-  console.warn("Menggunakan data MOCK untuk Popular Menus.");
+  // Mengganti console.warn dengan console.log
+  console.log("Mengambil data Popular Menus dari backend...");
   
-  const mockPopularMenus = [
-    {
-      id: 1, // Ganti dengan ID menu sungguhan jika ada
-      name: 'Ayam Kawin (Mock)',
-      tenant: { id: 1, name: 'Warung Pecah Sebelah' }, // Pastikan tenant ID 1 ada
-      imageUrl: '/src/assets/mock/ayam-kawin.jpg', // Ini akan gagal
-    },
-    // ... data mock lainnya
-  ];
-
-  return Promise.resolve({ data: mockPopularMenus });
+  // Mengganti data mock dengan panggilan API asli
+  return apiClient.get('/popular-menus/');
 };
 
 export default apiClient;
