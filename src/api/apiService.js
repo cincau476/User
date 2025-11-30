@@ -10,7 +10,7 @@ export const BASE_URL = 'http://localhost:8000';
 // Mari kita cek...
 // urls.py Anda mendaftarkan 'stands', 'create/', dll. di root.
 // Jadi, API_URL adalah BASE_URL itu sendiri.
-const API_URL = 'http://localhost:8000';
+const API_URL = 'http://localhost:8000/api';
 
 
 const apiClient = axios.create({
@@ -26,8 +26,13 @@ const apiClient = axios.create({
  * Mengambil daftar semua stand (tenant)
  * LIVE - Terhubung ke StandViewSet
  */
+export const loginUser = (credentials) => {
+  // credentials: { username: "...", password: "..." }
+  return apiClient.post('/users/login/', credentials);
+};
+
 export const getStands = () => {
-  return apiClient.get('/stands/'); 
+  return apiClient.get('/tenants/stands/'); 
 };
 
 /**
@@ -83,11 +88,12 @@ export const cancelOrder = (orderUuid) => {
  * Backend Anda tidak memiliki endpoint untuk ini.
  */
 export const getPopularMenus = () => {
-  // Mengganti console.warn dengan console.log
-  console.log("Mengambil data Popular Menus dari backend...");
+  // SEBELUMNYA (Salah):
+  // return apiClient.get('/popular-menus/');
   
-  // Mengganti data mock dengan panggilan API asli
-  return apiClient.get('/popular-menus/');
+  // PERBAIKAN (Benar):
+  // Tambahkan '/orders' di depannya agar sesuai dengan backend
+  return apiClient.get('/orders/popular-menus/'); 
 };
 
 export default apiClient;
