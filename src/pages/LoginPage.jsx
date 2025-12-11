@@ -31,32 +31,29 @@ export default function LoginPage() {
       const response = await loginUser(formData);
       const { token, user } = response.data;
 
+      // Simpan di User App (biar aman)
       localStorage.setItem('token', token);
       localStorage.setItem('userRole', user.role);
 
-      // --- PERBAIKAN LOGIKA REDIRECT ---
-      if (user.role === 'admin' || user.role === 'seller' || user.role === 'cashier') {
-        // Arahkan ke URL Dashboard yang berjalan di port 5176
-        // Backend mengirim "/admin-dashboard", kita hanya butuh base URL-nya saja
-        // karena aplikasi dashboard kamu default-nya langsung ke dashboard.
-        
-        window.location.href = 'http://localhost:5176'; 
-        
-        // PENTING: 
-        // Pastikan aplikasi 'pbl' (Dashboard) kamu sedang berjalan di terminal lain 
-        // dengan perintah 'npm run dev' (cek port-nya, pastikan 5176).
-      } else {
-        // Jika customer biasa, kembali ke halaman utama customer
+      // --- LOGIKA REDIRECT PENTING ---
+      if (user.role === 'cashier') {
+        // LEMPAR KE KASIR BAWA TOKEN
+        window.location.href = `http://localhost:5175/pos?token=${token}`;
+      } 
+      else if (user.role === 'admin' || user.role === 'seller') {
+        // LEMPAR KE DASHBOARD BAWA TOKEN (jika dashboard juga pisah port)
+        window.location.href = `http://localhost:5176/?token=${token}`; 
+      } 
+      else {
         navigate('/');
       }
       
     } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.detail || "Login gagal. Periksa username/password.");
+      // ... (error handling)
     } finally {
       setLoading(false);
     }
-  };
+};
 
   return (
     <Layout>
