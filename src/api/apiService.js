@@ -40,7 +40,7 @@ export const getStands = () => {
  * LIVE - Terhubung ke StandViewSet (retrieve)
  */
 export const getStandDetails = (standId) => {
-  return apiClient.get(`/stands/${standId}/`);
+  return apiClient.get(`/tenants/stands/${standId}/`);
 };
 
 /**
@@ -48,8 +48,8 @@ export const getStandDetails = (standId) => {
  * LIVE - Terhubung ke MenuItemViewSet
  */
 export const getMenuForStand = (standId) => {
-  // Ini memanggil rute nested: /stands/<stand_pk>/menus/
-  return apiClient.get(`/stands/${standId}/menus/`);
+  // Backend Anda menggunakan: /api/tenants/stands/<id>/menus/
+  return apiClient.get(`/tenants/stands/${standId}/menus/`);
 };
 
 /**
@@ -66,8 +66,7 @@ export const createOrder = (orderData) => {
  * LIVE - Terhubung ke OrderDetailView
  */
 export const getOrderDetails = (orderUuid) => {
-  // Ini memanggil /<uuid:order_uuid>/
-  return apiClient.get(`/${orderUuid}/`);
+  return apiClient.get(`/orders/${orderUuid}/`);
 };
 
 /**

@@ -31,29 +31,38 @@ export default function LoginPage() {
       const response = await loginUser(formData);
       const { token, user } = response.data;
 
-      // Simpan di User App (biar aman)
+      // Simpan data di local storage aplikasi User sebagai backup
       localStorage.setItem('token', token);
-      localStorage.setItem('userRole', user.role);
+      localStorage.setItem('user', JSON.stringify(user));
 
-      // --- LOGIKA REDIRECT PENTING ---
-      if (user.role === 'cashier') {
-        // LEMPAR KE KASIR BAWA TOKEN
+      // --- LOGIKA REDIRECT BERDASARKAN ROLE ---
+      
+      if (user.role === 'seller' || user.role === 'tenant') {
+        // 1. HUBUNGKAN TENANT/SELLER
+        // Dilempar ke web tenant (misal port 5174) dengan membawa token di URL
+        window.location.href = `http://localhost:5174/external-login?token=${token}`; 
+      } 
+      else if (user.role === 'cashier') {
+        // 2. TETAP PERTAHANKAN KASIR
+        // Dilempar ke aplikasi kasir (misal port 5175)
         window.location.href = `http://localhost:5175/pos?token=${token}`;
       } 
-      else if (user.role === 'admin' || user.role === 'seller') {
-        // LEMPAR KE DASHBOARD BAWA TOKEN (jika dashboard juga pisah port)
-        window.location.href = `http://localhost:5176/?token=${token}`; 
+      else if (user.role === 'admin') {
+        // 3. TETAP PERTAHANKAN ADMIN
+        // Dilempar ke dashboard admin (misal port 5176)
+        window.location.href = `http://localhost:5176/admin-dashboard?token=${token}`; 
       } 
       else {
+        // Role lainnya (Customer/Guest) tetap di web utama
         navigate('/');
       }
       
     } catch (err) {
-      // ... (error handling)
+      setError(err.response?.data?.detail || "Gagal login. Periksa kembali akun Anda.");
     } finally {
       setLoading(false);
     }
-};
+  };
 
   return (
     <Layout>
