@@ -57,8 +57,8 @@ export const getMenuForStand = (standId) => {
  * LIVE - Terhubung ke CreateOrderView
  */
 export const createOrder = (orderData) => {
-  // orderData HARUS cocok dengan OrderCreateSerializer
-  return apiClient.post('/create/', orderData); 
+  // BENAR: Hasilnya http://localhost:8000/api/orders/create/
+  return apiClient.post('/orders/create/', orderData); 
 };
 
 /**
@@ -74,8 +74,8 @@ export const getOrderDetails = (orderUuid) => {
  * LIVE - Terhubung ke CancelOrderView
  */
 export const cancelOrder = (orderUuid) => {
-  // Ini memanggil /<uuid:order_uuid>/cancel/
-  return apiClient.post(`/${orderUuid}/cancel/`);
+  // BENAR: Hasilnya http://localhost:8000/api/orders/<uuid>/cancel/
+  return apiClient.post(`/orders/${orderUuid}/cancel/`);
 };
 
 
