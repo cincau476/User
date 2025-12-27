@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 1. Tentukan URL dasar backend
 // Ini adalah alamat server Django Anda
-export const BASE_URL = 'http://localhost:8000';
+export const BASE_URL = 'http://localhost:8000/api';
 
 // 2. Tentukan URL API (dengan '/api' jika Anda menambahkannya di urls.py utama)
 // Berdasarkan file urls.py Anda, sepertinya Anda TIDAK menggunakan /api/
