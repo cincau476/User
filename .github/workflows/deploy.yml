@@ -1,4 +1,4 @@
-name: Deploy Admin to VM
+name: Deploy user to VM
 
 on:
   push:
