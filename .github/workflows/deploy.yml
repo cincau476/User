@@ -1,0 +1,22 @@
+name: Deploy Admin to VM
+
+on:
+  push:
+    branches:
+      - main  # Ganti jadi master jika branch utama Anda bernama master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Update
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/nginx-proxy/frontend-user
+            git pull origin main
+            cd ..
+            sudo docker-compose up -d --build user-fe
