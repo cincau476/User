@@ -1,18 +1,20 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BASE_URL } from '../api/apiService'; // <-- 1. IMPORT
+import { BASE_URL } from '../api/apiService'; 
 
 export default function MenuCard({ menu }) {
-  // 2. Buat URL lengkap
-  const imageUrl = menu.imageUrl.startsWith('http') 
-    ? menu.imageUrl 
-    : `${BASE_URL}${menu.imageUrl}`;
+  // Tambahkan pengecekan jika menu.imageUrl tidak ada
+  const rawImageUrl = menu.imageUrl || '/default-image.png';
+
+  const imageUrl = rawImageUrl.startsWith('http') 
+    ? rawImageUrl 
+    : `${BASE_URL}${rawImageUrl}`;
 
   return (
     <Link to={`/stand/${menu.tenant.id}`}> 
       <div className="bg-slate-800 rounded-lg overflow-hidden shadow-lg hover:bg-slate-700 transition-colors">
         <img 
-          src={imageUrl} // <-- 3. Gunakan URL lengkap
+          src={imageUrl} 
           alt={menu.name} 
           className="w-full h-32 object-cover" 
         />
