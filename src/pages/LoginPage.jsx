@@ -36,22 +36,21 @@ export default function LoginPage() {
       localStorage.setItem('user', JSON.stringify(user));
 
       // Ambil domain dasar (misal: https://kantinku.com)
-      const baseUrl = window.location.origin;
+      const baseUrl = window.location.hostname === 'localhost' 
+        ? window.location.origin 
+        : 'https://www.kantinku.com';
 
-      // --- LOGIKA REDIRECT BERDASARKAN ROLE (DIPERBAIKI) ---
-      
+      // --- LOGIKA REDIRECT BERDASARKAN ROLE ---
       if (user.role === 'seller' || user.role === 'tenant') {
-        // Dilempar ke sub-path /tenant/
         window.location.href = `${baseUrl}/tenant/external-login?token=${token}`; 
       } 
       else if (user.role === 'cashier') {
-        // Dilempar ke sub-path /kasir/
         window.location.href = `${baseUrl}/kasir/pos?token=${token}`;
       } 
       else if (user.role === 'admin') {
-        // Dilempar ke sub-path /admin/
-        window.location.href = `${baseUrl}/admin/admin-dashboard?token=${token}`; 
-      } 
+      // Pastikan path /admin-dashboard sesuai dengan routing di App.jsx Admin Anda
+      window.location.href = `${baseUrl}/admin/dashboard?token=${token}`; 
+      }
       else {
         // Role lainnya (Customer/Guest) tetap di web utama
         navigate('/');
