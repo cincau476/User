@@ -31,26 +31,26 @@ export default function LoginPage() {
       const response = await loginUser(formData);
       const { token, user } = response.data;
 
-      // Simpan data di local storage aplikasi User sebagai backup
+      // Simpan data di local storage sebagai backup
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
 
-      // --- LOGIKA REDIRECT BERDASARKAN ROLE ---
+      // Ambil domain dasar (misal: https://kantinku.com)
+      const baseUrl = window.location.origin;
+
+      // --- LOGIKA REDIRECT BERDASARKAN ROLE (DIPERBAIKI) ---
       
       if (user.role === 'seller' || user.role === 'tenant') {
-        // 1. HUBUNGKAN TENANT/SELLER
-        // Dilempar ke web tenant (misal port 5174) dengan membawa token di URL
-        window.location.href = `http://localhost:5174/external-login?token=${token}`; 
+        // Dilempar ke sub-path /tenant/
+        window.location.href = `${baseUrl}/tenant/external-login?token=${token}`; 
       } 
       else if (user.role === 'cashier') {
-        // 2. TETAP PERTAHANKAN KASIR
-        // Dilempar ke aplikasi kasir (misal port 5175)
-        window.location.href = `http://localhost:5175/pos?token=${token}`;
+        // Dilempar ke sub-path /kasir/
+        window.location.href = `${baseUrl}/kasir/pos?token=${token}`;
       } 
       else if (user.role === 'admin') {
-        // 3. TETAP PERTAHANKAN ADMIN
-        // Dilempar ke dashboard admin (misal port 5176)
-        window.location.href = `http://localhost:5176/admin-dashboard?token=${token}`; 
+        // Dilempar ke sub-path /admin/
+        window.location.href = `${baseUrl}/admin/admin-dashboard?token=${token}`; 
       } 
       else {
         // Role lainnya (Customer/Guest) tetap di web utama
