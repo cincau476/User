@@ -12,13 +12,13 @@ import axios from 'axios';
 // Jadi, API_URL adalah BASE_URL itu sendiri.
 
 
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: BASE_URL, // Gunakan variabel yang sama
   headers: {
     'Content-Type': 'application/json',
   },
-  // Penting untuk mengirim 'session cookie' (untuk IsGuestOrderOwner)
   withCredentials: true, 
 });
 
