@@ -1,9 +1,51 @@
+/* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    /* Menangani area aman untuk navigasi bawah pada iPhone 14/15 Pro Max */
+    --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  }
 
-html, body, #root {
-  height: 100%;
-  margin: 0;
+  body {
+    /* antialiased membuat font terlihat lebih bersih di layar Retina iPhone/iPad */
+    @apply antialiased text-sm md:text-base bg-gray-900;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Responsivitas khusus iPad (768px - 1024px) */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .ipad-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+  }
+
+  /* Utility untuk padding bawah agar tidak tertutup Home Indicator iOS */
+  .safe-area-pb {
+    padding-bottom: calc(0.5rem + var(--safe-area-inset-bottom));
+  }
+}
+
+/* Mencegah 'Auto-Zoom' di iPhone:
+   iOS secara otomatis akan melakukan zoom-in jika font pada input < 16px.
+   Ini memastikan struktur web tidak bergeser saat user mulai mengetik.
+*/
+@media screen and (max-width: 768px) {
+  input, 
+  select, 
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Custom Scrollbar untuk area Chart agar tetap terlihat rapi di Mobile */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 4px;
+}
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 10px;
 }

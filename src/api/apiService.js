@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 1. Tentukan URL dasar backend
 // Ini adalah alamat server Django Anda
-export const BASE_URL = 'http://localhost:8000/api';
+export const BASE_URL = 'http://192.168.1.10:8000/api';
 
 // 2. Tentukan URL API (dengan '/api' jika Anda menambahkannya di urls.py utama)
 // Berdasarkan file urls.py Anda, sepertinya Anda TIDAK menggunakan /api/
@@ -10,7 +10,7 @@ export const BASE_URL = 'http://localhost:8000/api';
 // Mari kita cek...
 // urls.py Anda mendaftarkan 'stands', 'create/', dll. di root.
 // Jadi, API_URL adalah BASE_URL itu sendiri.
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'http://192.168.1.10:8000/api';
 
 
 const apiClient = axios.create({
