@@ -48,16 +48,15 @@ export default function StandDetailPage() {
           getMenuForStand(standId)
         ]);
         setStand(standResponse.data);
-        setMenuItems(menuResponse.data);
+        // Validasi array di sini
+        setMenuItems(Array.isArray(menuResponse.data) ? menuResponse.data : []);
         setError(null);
       } catch (err) {
-        console.error("Gagal memuat data:", err);
-        setError("Gagal memuat data stand. Mungkin stand tutup atau link salah.");
+        setError("Gagal memuat data stand.");
       } finally {
         setLoading(false);
       }
     };
-    
     loadData();
   }, [standId]);
 
