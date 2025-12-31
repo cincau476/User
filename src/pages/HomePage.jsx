@@ -16,14 +16,14 @@ export default function HomePage() {
     const loadData = async () => {
       try {
         setLoading(true);
-        
         const [menusResponse, standsResponse] = await Promise.all([
-          getPopularMenus(), // Menggunakan data MOCK
-          getStands()        // Menggunakan data MOCK
+          getPopularMenus(),
+          getStands()
         ]);
         
-        setPopularMenus(menusResponse.data);
-        setStands(standsResponse.data);
+        // Pastikan data yang di-set adalah Array
+        setPopularMenus(Array.isArray(menusResponse.data) ? menusResponse.data : []);
+        setStands(Array.isArray(standsResponse.data) ? standsResponse.data : []);
         setError(null);
       } catch (err) {
         console.error("Gagal mengambil data:", err);
@@ -32,10 +32,9 @@ export default function HomePage() {
         setLoading(false);
       }
     };
-
     loadData();
   }, []);
-
+  
   if (error) {
     return (
       <Layout>
