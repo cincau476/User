@@ -41,19 +41,32 @@ export default function LoginPage() {
   
       // Redirect berdasarkan role dengan menyertakan token di URL
       if (user.role === 'seller' || user.role === 'tenant') {
+        // Simpan langsung ke tenant_token
+        sessionStorage.setItem('tenant_token', token);
+        sessionStorage.setItem('tenant_user', JSON.stringify(user));
+        // Redirect tanpa perlu kirim token di URL lagi (opsional, tapi lebih bersih)
         window.location.href = `${baseUrl}/tenant/external-login?token=${token}`; 
       } 
       else if (user.role === 'cashier') {
+        // Simpan langsung ke kasir_token
+        sessionStorage.setItem('kasir_token', token);
+        sessionStorage.setItem('kasir_user', JSON.stringify(user));
         window.location.href = `${baseUrl}/kasir/pos?token=${token}`;
       } 
       else if (user.role === 'admin') {
+        // Simpan langsung ke admin_token
+        sessionStorage.setItem('admin_token', token);
         window.location.href = `${baseUrl}/admin/dashboard?token=${token}`; 
       }
       else {
+        // Customer biasa
+        sessionStorage.setItem('token', token);
+        sessionStorage.setItem('user', JSON.stringify(user));
         navigate('/');
       }
+      
     } catch (err) {
-      setError(err.response?.data?.detail || "Gagal login.");
+      setError(err.response?.data?.detail || "Gagal login. Periksa kembali akun Anda.");
     } finally {
       setLoading(false);
     }
