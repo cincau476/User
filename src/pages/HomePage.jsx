@@ -21,9 +21,20 @@ export default function HomePage() {
           getStands()
         ]);
         
-        // Pastikan data yang di-set adalah Array
-        setPopularMenus(Array.isArray(menusResponse.data) ? menusResponse.data : []);
-        setStands(Array.isArray(standsResponse.data) ? standsResponse.data : []);
+        // --- PERBAIKAN START ---
+        
+        // 1. Handle Pagination untuk Menu Populer
+        // Cek apakah data ada di dalam properti 'results' (Pagination DRF) atau langsung di 'data'
+        const menusData = menusResponse.data.results || menusResponse.data;
+        setPopularMenus(Array.isArray(menusData) ? menusData : []);
+
+        // 2. Handle Pagination untuk List Stand
+        // Sama seperti di atas, cek 'results' dulu untuk antisipasi pagination
+        const standsData = standsResponse.data.results || standsResponse.data;
+        setStands(Array.isArray(standsData) ? standsData : []);
+
+        // --- PERBAIKAN END ---
+
         setError(null);
       } catch (err) {
         console.error("Gagal mengambil data:", err);
