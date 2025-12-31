@@ -1,21 +1,11 @@
+// src/api/apiService.js
 import axios from 'axios';
 
-// 1. Tentukan URL dasar backend
-// Ini adalah alamat server Django Anda
-
-
-// 2. Tentukan URL API (dengan '/api' jika Anda menambahkannya di urls.py utama)
-// Berdasarkan file urls.py Anda, sepertinya Anda TIDAK menggunakan /api/
-// Jadi kita akan gunakan BASE_URL saja.
-// Mari kita cek...
-// urls.py Anda mendaftarkan 'stands', 'create/', dll. di root.
-// Jadi, API_URL adalah BASE_URL itu sendiri.
-
-
+// URL Dasar Backend
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const apiClient = axios.create({
-  baseURL: BASE_URL, // Gunakan variabel yang sama
+  baseURL: BASE_URL, 
   headers: {
     'Content-Type': 'application/json',
   },
@@ -23,75 +13,67 @@ const apiClient = axios.create({
 });
 
 /**
- * Mengambil daftar semua stand (tenant)
- * LIVE - Terhubung ke StandViewSet
+ * Login User (untuk Seller/Kasir)
  */
 export const loginUser = (credentials) => {
-  // credentials: { username: "...", password: "..." }
   return apiClient.post('/users/login/', credentials);
 };
 
+/**
+ * Mengambil daftar semua stand (tenant)
+ */
 export const getStands = () => {
   return apiClient.get('/tenants/stands/'); 
 };
 
 /**
- * Mengambil detail satu stand (MOCK)
- * LIVE - Terhubung ke StandViewSet (retrieve)
+ * Mengambil detail satu stand
  */
 export const getStandDetails = (standId) => {
   return apiClient.get(`/tenants/stands/${standId}/`);
 };
 
 /**
- * Mengambil list menu untuk satu stand (MOCK)
- * LIVE - Terhubung ke MenuItemViewSet
+ * Mengambil list menu untuk satu stand
  */
 export const getMenuForStand = (standId) => {
-  // Backend Anda menggunakan: /api/tenants/stands/<id>/menus/
   return apiClient.get(`/tenants/stands/${standId}/menus/`);
 };
 
 /**
  * Membuat pesanan baru
- * LIVE - Terhubung ke CreateOrderView
  */
 export const createOrder = (orderData) => {
-  // BENAR: Hasilnya http://localhost:8000/api/orders/create/
   return apiClient.post('/orders/create/', orderData); 
 };
 
 /**
- * Mengambil detail pesanan (MOCK)
- * LIVE - Terhubung ke OrderDetailView
+ * Mengambil detail pesanan
+ * PERBAIKAN PENTING: Menerima parameter 'token' untuk Guest Access
  */
-export const getOrderDetails = (orderUuid) => {
-  return apiClient.get(`/orders/${orderUuid}/`);
+export const getOrderDetails = (orderUuid, token) => {
+  const config = {};
+  
+  // Jika ada token (dari localStorage), kirim sebagai query param
+  if (token) {
+    config.params = { token: token };
+  }
+  
+  // Request akan menjadi: /orders/<uuid>/?token=...
+  return apiClient.get(`/orders/${orderUuid}/`, config);
 };
 
 /**
- * Membatalkan pesanan (MOCK)
- * LIVE - Terhubung ke CancelOrderView
+ * Membatalkan pesanan
  */
 export const cancelOrder = (orderUuid) => {
-  // BENAR: Hasilnya http://localhost:8000/api/orders/<uuid>/cancel/
   return apiClient.post(`/orders/${orderUuid}/cancel/`);
 };
 
-
-// --- FUNGSI MOCK (BELUM ADA DI BACKEND) ---
-
 /**
  * Mengambil menu-menu populer
- * !!! MASIH MOCK !!!
- * Backend Anda tidak memiliki endpoint untuk ini.
  */
 export const getPopularMenus = () => {
-  // SEBELUMNYA (Salah):
-  // return apiClient.get('/popular-menus/');
-  
-  // PERBAIKAN (Benar):
-  // Tambahkan '/orders' di depannya agar sesuai dengan backend
   return apiClient.get('/orders/popular-menus/'); 
 };
 
