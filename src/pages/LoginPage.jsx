@@ -31,16 +31,15 @@ export default function LoginPage() {
       const response = await loginUser(formData);
       const { token, user } = response.data;
 
-      // Simpan data di local storage sebagai backup
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-
-      // Ambil domain dasar (misal: https://kantinku.com)
+      // Gunakan sessionStorage agar data hilang saat browser/tab ditutup
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(user));
+  
       const baseUrl = window.location.hostname === 'localhost' 
         ? window.location.origin 
         : 'https://www.kantinku.com';
-
-      // --- LOGIKA REDIRECT BERDASARKAN ROLE ---
+  
+      // Redirect berdasarkan role dengan menyertakan token di URL
       if (user.role === 'seller' || user.role === 'tenant') {
         window.location.href = `${baseUrl}/tenant/external-login?token=${token}`; 
       } 
@@ -48,21 +47,18 @@ export default function LoginPage() {
         window.location.href = `${baseUrl}/kasir/pos?token=${token}`;
       } 
       else if (user.role === 'admin') {
-      // Pastikan path /admin-dashboard sesuai dengan routing di App.jsx Admin Anda
-      window.location.href = `${baseUrl}/admin/dashboard?token=${token}`; 
+        window.location.href = `${baseUrl}/admin/dashboard?token=${token}`; 
       }
       else {
-        // Role lainnya (Customer/Guest) tetap di web utama
         navigate('/');
       }
-      
     } catch (err) {
-      setError(err.response?.data?.detail || "Gagal login. Periksa kembali akun Anda.");
+      setError(err.response?.data?.detail || "Gagal login.");
     } finally {
       setLoading(false);
     }
   };
-
+  
   return (
     <Layout>
       <div className="flex flex-col items-center justify-center min-h-[80vh] px-4">
