@@ -3,15 +3,26 @@ import { Link } from 'react-router-dom';
 import { BASE_URL } from '../api/apiService'; 
 
 export default function MenuCard({ menu }) {
-  // Tambahkan pengecekan jika menu.imageUrl tidak ada
+  // 1. LOGIKA GAMBAR
   const rawImageUrl = menu.imageUrl || '/default-image.png';
-
   const imageUrl = rawImageUrl.startsWith('http') 
     ? rawImageUrl 
     : `${BASE_URL}${rawImageUrl}`;
 
+  // 2. LOGIKA STAND ID (PENTING!)
+  // Ambil tenant_id (dari backend baru) ATAU tenant (jika backend lama mengirim ID angka)
+  // Kita handle juga jika tenant ternyata object (jaga-jaga)
+  const standId = menu.tenant_id 
+    || (typeof menu.tenant === 'object' ? menu.tenant.id : menu.tenant);
+
+  // 3. LOGIKA NAMA STAND
+  // Ambil tenant_name (dari backend baru)
+  const standName = menu.tenant_name 
+    || (typeof menu.tenant === 'object' ? menu.tenant.name : 'Kantin');
+
   return (
-    <Link to={`/stand/${menu.tenant.id}`}> 
+    // Gunakan standId yang sudah divalidasi
+    <Link to={`/stand/${standId}`}> 
       <div className="bg-slate-800 rounded-lg overflow-hidden shadow-lg hover:bg-slate-700 transition-colors">
         <img 
           src={imageUrl} 
@@ -20,7 +31,8 @@ export default function MenuCard({ menu }) {
         />
         <div className="p-4">
           <h3 className="font-semibold text-white text-md">{menu.name}</h3>
-          <p className="text-sm text-slate-300">{menu.tenant.name}</p>
+          {/* Tampilkan Nama Stand yang benar */}
+          <p className="text-sm text-slate-300">{standName}</p>
         </div>
       </div>
     </Link>
