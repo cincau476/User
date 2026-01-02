@@ -34,6 +34,8 @@ export default function StandCard({ stand }) {
     // Biarkan relative ke root domain (Nginx akan handle)
     imageUrl = relativeImageUrl;
   } else {
+    imageUrl = `${BASE_URL}${relativeImageUrl}`;
+  }
     // Fallback: tempelkan BASE_URL untuk path lain
 
   return (
