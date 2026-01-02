@@ -23,9 +23,18 @@ export default function StandCard({ stand }) {
 
   // Buat URL gambar yang lengkap
   // Cek apakah 'relativeImageUrl' ada sebelum membuat URL
-  const imageUrl = relativeImageUrl 
-    ? (relativeImageUrl.startsWith('http') ? relativeImageUrl : `${BASE_URL}${relativeImageUrl}`)
-    : '/src/assets/mock/default-stand.jpg'; // Ganti dengan path ke gambar default Anda
+  let imageUrl;
+  if (!relativeImageUrl) {
+    imageUrl = '/src/assets/mock/default-stand.jpg';
+  } else if (relativeImageUrl.startsWith('http')) {
+    // Jika sudah absolute URL (misal dari Google / S3)
+    imageUrl = relativeImageUrl;
+  } else if (relativeImageUrl.startsWith('/media')) {
+    // Jika path diawali /media, JANGAN tempelkan BASE_URL (/api)
+    // Biarkan relative ke root domain (Nginx akan handle)
+    imageUrl = relativeImageUrl;
+  } else {
+    // Fallback: tempelkan BASE_URL untuk path lain
 
   return (
     // Bungkus dengan <Link>
