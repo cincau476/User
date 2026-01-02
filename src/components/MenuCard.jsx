@@ -5,10 +5,12 @@ import { BASE_URL } from '../api/apiService';
 export default function MenuCard({ menu }) {
   // 1. LOGIKA GAMBAR
   const rawImageUrl = menu.imageUrl || '/default-image.png';
-  const imageUrl = rawImageUrl.startsWith('http') 
-    ? rawImageUrl 
-    : `${BASE_URL}${rawImageUrl}`;
-
+  const getImageUrl = (url) => {
+    if (!url) return null; // atau gambar default
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/media')) return url; // <-- Cek folder media
+    return `${BASE_URL}${url}`;
+  };
   // 2. LOGIKA STAND ID (PENTING!)
   // Ambil tenant_id (dari backend baru) ATAU tenant (jika backend lama mengirim ID angka)
   // Kita handle juga jika tenant ternyata object (jaga-jaga)
