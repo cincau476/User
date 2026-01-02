@@ -11,6 +11,8 @@ export default function MenuCard({ menu }) {
     if (url.startsWith('/media')) return url; // <-- Cek folder media
     return `${BASE_URL}${url}`;
   };
+
+  const imageUrl = getImageUrl(rawImageUrl);
   // 2. LOGIKA STAND ID (PENTING!)
   // Ambil tenant_id (dari backend baru) ATAU tenant (jika backend lama mengirim ID angka)
   // Kita handle juga jika tenant ternyata object (jaga-jaga)
