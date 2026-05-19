@@ -1,19 +1,120 @@
 // src/api/apiService.js
 import axios from 'axios';
 
-// URL Dasar Backend
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const apiClient = axios.create({
   baseURL: BASE_URL, 
+  timeout: 10000, 
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json', 
   },
-  withCredentials: true, 
+  withCredentials: true, // WAJIB TRUE agar browser otomatis mengirim HttpOnly Cookie
+  xsrfCookieName: 'csrftoken',
+  xsrfHeaderName: 'X-CSRFToken',
 });
 
+// State untuk Mutex Lock (Mencegah Race Condition saat token expired)
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`; 
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // Cegah loop jika request ke /refresh itu sendiri yang gagal
+    if (originalRequest.url.includes('/users/token/refresh/')) {
+        return Promise.reject(error);
+    }
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+        
+        // 1. JIKA SEDANG REFRESH: Masukkan request ini ke antrean (Queue)
+        if (isRefreshing) {
+            return new Promise(function(resolve, reject) {
+                failedQueue.push({resolve, reject});
+            }).then(token => {
+                originalRequest.headers['Authorization'] = 'Bearer ' + token;
+                return apiClient(originalRequest); // Jalankan ulang setelah token baru didapat
+            }).catch(err => {
+                return Promise.reject(err);
+            });
+        }
+
+        // 2. JIKA BELUM REFRESH: Kunci gembok (Mutex Lock)
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        try {
+            // Panggil endpoint refresh. TIDAK PERLU mengirim body {refresh: ...}
+            // karena browser otomatis menempelkan HttpOnly Cookie berkat withCredentials: true
+            const response = await axios.post(`${BASE_URL}/users/token/refresh/`, {}, {
+                withCredentials: true 
+            });
+            
+            const newAccessToken = response.data.access;
+            localStorage.setItem('access_token', newAccessToken);
+            
+            // Ubah header request yang gagal tadi dengan token baru
+            apiClient.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;
+            originalRequest.headers['Authorization'] = 'Bearer ' + newAccessToken;
+            
+            // Buka gembok & jalankan semua request yang ngantre
+            processQueue(null, newAccessToken);
+            return apiClient(originalRequest);
+
+        } catch (refreshError) {
+            // Refresh gagal (cookie hilang/expired/blacklist)
+            processQueue(refreshError, null);
+            localStorage.removeItem('access_token');
+            // Jika ada context, panggil fungsi logout. Jika tidak, force redirect:
+            window.location.href = '/login'; 
+            return Promise.reject(refreshError);
+        } finally {
+            // Pastikan gembok selalu dibuka di akhir proses
+            isRefreshing = false;
+        }
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+// ... (Export API lainnya tetap sama seperti sebelumnya) ...
+
+
+// ==========================================================
+// DAFTAR ENDPOINT API
+// Sinkron dengan prefix path di canteen/urls.py
+// ==========================================================
+
 /**
- * Login User (untuk Seller/Kasir)
+ * Login User (untuk Seller/Kasir/Admin)
+ * Pastikan backend di endpoint /users/login/ mengembalikan { access: "...", refresh: "..." }
  */
 export const loginUser = (credentials) => {
   return apiClient.post('/users/login/', credentials);
@@ -49,17 +150,15 @@ export const createOrder = (orderData) => {
 
 /**
  * Mengambil detail pesanan
- * PERBAIKAN PENTING: Menerima parameter 'token' untuk Guest Access
+ * Menerima parameter 'token' untuk Guest Access jika tidak login
  */
 export const getOrderDetails = (orderUuid, token) => {
   const config = {};
   
-  // Jika ada token (dari localStorage), kirim sebagai query param
   if (token) {
     config.params = { token: token };
   }
   
-  // Request akan menjadi: /orders/<uuid>/?token=...
   return apiClient.get(`/orders/${orderUuid}/`, config);
 };
 
