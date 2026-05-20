@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { loginUser } from '../api/apiService';
+import { loginUser, verifyMfaLogin } from '../api/apiService'; // Mengimpor kedua fungsi layanan API
 
 // Ikon Mata (untuk lihat password)
 const EyeIcon = ({ visible }) => (
@@ -22,6 +22,51 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // State baru untuk penanganan alur MFA (Multi-Factor Authentication)
+  const [mfaData, setMfaData] = useState(null); // Menyimpan {mfa_required, temp_token}
+  const [otp, setOtp] = useState("");
+
+  // Fungsi pembantu untuk memproses penyimpanan token dan pengalihan (redirect) rute setelah sukses
+  const handleLoginSuccess = (data) => {
+    // Sinkronisasi penamaan parameter key token 'access' dari SimpleJWT backend dan properti 'token' bawaan
+    const finalToken = data.access || data.token;
+    const user = data.user;
+
+    if (!finalToken || !user) {
+      setError("Data otentikasi dari server tidak valid.");
+      return;
+    }
+
+    // Menyimpan data ke sessionStorage agar otomatis terhapus saat tab browser ditutup
+    sessionStorage.setItem('token', finalToken);
+    sessionStorage.setItem('user', JSON.stringify(user));
+
+    const baseUrl = window.location.hostname === 'www.kantinku.com' 
+      ? 'https://www.kantinku.com' 
+      : window.location.origin;
+
+    // Logika pengalihan rute berdasarkan hak akses (role) pengguna
+    if (user.role === 'seller' || user.role === 'tenant') {
+      sessionStorage.setItem('tenant_token', finalToken);
+      sessionStorage.setItem('tenant_user', JSON.stringify(user));
+      window.location.href = `${baseUrl}/tenant/external-login?token=${finalToken}`; 
+    } 
+    else if (user.role === 'cashier') {
+      sessionStorage.setItem('kasir_token', finalToken);
+      sessionStorage.setItem('kasir_user', JSON.stringify(user));
+      window.location.href = `${baseUrl}/kasir/pos?token=${finalToken}`;
+    } 
+    else if (user.role === 'admin') {
+      sessionStorage.setItem('admin_token', finalToken);
+      window.location.href = `${baseUrl}/admin/dashboard?token=${finalToken}`; 
+    }
+    else {
+      // Akses untuk pembeli/customer biasa
+      navigate('/');
+    }
+  };
+
+  // Tahap 1: Verifikasi Kredensial Utama (Username & Password)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -29,56 +74,51 @@ export default function LoginPage() {
 
     try {
       const response = await loginUser(formData);
-      const { token, user } = response.data;
+      
+      // Deteksi validasi MFA dari backend
+      if (response.data && response.data.mfa_required) {
+        setMfaData(response.data); // Simpan payload temp_token dan ubah UI ke form OTP
+        setLoading(false);
+        return;
+      }
 
-      // Gunakan sessionStorage agar data hilang saat browser/tab ditutup
-      sessionStorage.setItem('token', token);
-      sessionStorage.setItem('user', JSON.stringify(user));
-  
-      const baseUrl = window.location.hostname === 'localhost' 
-        ? window.location.origin 
-        : 'https://www.kantinku.com';
-  
-      // Redirect berdasarkan role dengan menyertakan token di URL
-      if (user.role === 'seller' || user.role === 'tenant') {
-        // Simpan langsung ke tenant_token
-        sessionStorage.setItem('tenant_token', token);
-        sessionStorage.setItem('tenant_user', JSON.stringify(user));
-        // Redirect tanpa perlu kirim token di URL lagi (opsional, tapi lebih bersih)
-        window.location.href = `${baseUrl}/tenant/external-login?token=${token}`; 
-      } 
-      else if (user.role === 'cashier') {
-        // Simpan langsung ke kasir_token
-        sessionStorage.setItem('kasir_token', token);
-        sessionStorage.setItem('kasir_user', JSON.stringify(user));
-        window.location.href = `${baseUrl}/kasir/pos?token=${token}`;
-      } 
-      else if (user.role === 'admin') {
-        // Simpan langsung ke admin_token
-        sessionStorage.setItem('admin_token', token);
-        window.location.href = `${baseUrl}/admin/dashboard?token=${token}`; 
-      }
-      else {
-        // Customer biasa
-        sessionStorage.setItem('token', token);
-        sessionStorage.setItem('user', JSON.stringify(user));
-        navigate('/');
-      }
+      // Jika akun tidak mengaktifkan MFA, langsung berikan hak akses masuk
+      handleLoginSuccess(response.data);
       
     } catch (err) {
       setError(err.response?.data?.detail || "Gagal login. Periksa kembali akun Anda.");
-    } finally {
       setLoading(false);
     }
   };
-  
+
+  // Tahap 2: Verifikasi Kode Keamanan OTP (Hanya dipanggil jika MFA aktif)
+  const handleVerifyMfaSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const response = await verifyMfaLogin(mfaData.temp_token, otp);
+      // Jika kode valid, selesaikan otentikasi menggunakan token utama dari backend
+      handleLoginSuccess(response.data);
+    } catch (err) {
+      setError(err.response?.data?.detail || "Kode verifikasi salah atau sesi telah kedaluwarsa.");
+      setLoading(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="flex flex-col items-center justify-center min-h-[80vh] px-4">
         <div className="w-full max-w-md bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700">
+          
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-orange-400 mb-2">Login Staff</h1>
-            <p className="text-gray-400">Masuk sebagai Admin, Tenant, atau Kasir</p>
+            <h1 className="text-3xl font-bold text-orange-400 mb-2">
+              {mfaData ? "Verifikasi Keamanan" : "Login Staff"}
+            </h1>
+            <p className="text-gray-400">
+              {mfaData ? "Masukkan 6 digit kode dari aplikasi Authenticator atau gunakan kode cadangan Anda." : "Masuk sebagai Admin, Tenant, atau Kasir"}
+            </p>
           </div>
 
           {error && (
@@ -87,50 +127,92 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Username</label>
-              <input
-                type="text"
-                required
-                className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
-                placeholder="Masukkan username"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
-              <div className="relative">
+          {/* Kondisional UI: Tampilkan form OTP jika mfaData terisi */}
+          {!mfaData ? (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Username</label>
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type="text"
                   required
-                  className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all pr-12"
-                  placeholder="Masukkan password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                  placeholder="Masukkan username"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all pr-12"
+                    placeholder="Masukkan password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  >
+                    <EyeIcon visible={showPassword} />
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+              >
+                {loading ? 'Memproses...' : 'Masuk Sekarang'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyMfaSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2 text-center">
+                  Kode OTP / Backup Code
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white text-center text-2xl tracking-[0.25em] font-mono focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                  placeholder="000000"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.trim())}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || otp.length < 6}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+              >
+                {loading ? 'Memverifikasi...' : 'Konfirmasi & Masuk'}
+              </button>
+
+              <div className="text-center mt-4">
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  onClick={() => {
+                    setMfaData(null);
+                    setOtp("");
+                    setError(null);
+                  }}
+                  className="text-sm text-gray-400 hover:text-white underline transition-colors"
                 >
-                  <EyeIcon visible={showPassword} />
+                  Kembali ke Login Password
                 </button>
               </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-            >
-              {loading ? 'Memproses...' : 'Masuk Sekarang'}
-            </button>
-          </form>
+            </form>
+          )}
           
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center border-t border-gray-700 pt-4">
             <button onClick={() => navigate('/')} className="text-gray-500 hover:text-white text-sm">
               &larr; Kembali ke Menu Pelanggan
             </button>

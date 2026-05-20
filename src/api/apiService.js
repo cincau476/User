@@ -120,6 +120,22 @@ export const loginUser = (credentials) => {
   return apiClient.post('/users/login/', credentials);
 };
 
+// --- TAMBAHKAN FUNGSI INI UNTUK VERIFIKASI MFA ---
+/**
+ * Verifikasi OTP untuk menyelesaikan login MFA
+ */
+export const verifyMfaLogin = (temp_token, otp_code) => {
+  return apiClient.post('/users/login/mfa/verify/', {
+    temp_token,
+    otp_code
+  });
+};
+// -------------------------------------------------
+
+/**
+ * Verifikasi OTP untuk menyelesaikan login
+
+
 /**
  * Mengambil daftar semua stand (tenant)
  */
