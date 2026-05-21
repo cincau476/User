@@ -41,7 +41,7 @@ export default function LoginPage() {
     sessionStorage.setItem('token', finalToken);
     sessionStorage.setItem('user', JSON.stringify(user));
 
-    const baseUrl = window.location.origin 
+    const baseUrl = window.location.origin ; 
       ? 'https://www.kantinku.com' 
       : window.location.origin;
 
