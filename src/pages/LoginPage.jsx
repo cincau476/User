@@ -42,8 +42,6 @@ export default function LoginPage() {
     sessionStorage.setItem('user', JSON.stringify(user));
 
     const baseUrl = window.location.origin ; 
-      ? 'https://www.kantinku.com' 
-      : window.location.origin;
 
     // Logika pengalihan rute berdasarkan hak akses (role) pengguna
     if (user.role === 'seller' || user.role === 'tenant') {
