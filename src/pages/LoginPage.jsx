@@ -56,7 +56,7 @@ export default function LoginPage() {
     } 
     else if (user.role === 'admin') {
       sessionStorage.setItem('admin_token', finalToken);
-      window.location.href = `${baseUrl}/admin/dashboard?token=${finalToken}`; 
+      window.location.href = `${baseUrl}/admin/?token=${finalToken}`; 
     }
     else {
       // Akses untuk pembeli/customer biasa
