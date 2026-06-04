@@ -29,16 +29,12 @@ export default function StandDetailPage() {
   const [isConfirmationModalOpen, setConfirmationModalOpen] = useState(false);
   const [isCartDetailModalOpen, setCartDetailModalOpen] = useState(false); 
 
-  // Muat data menu & stand
   useEffect(() => {
-    // --- PENGECEKAN BARU ---
-    // Jika standId kosong atau teks "undefined", jangan panggil API
     if (!standId || standId === 'undefined' || standId === 'null') {
         setError("Stand tidak ditemukan (ID Invalid). Silakan kembali ke menu utama dan pilih stand lagi.");
         setLoading(false);
-        return; // BERHENTI DI SINI
+        return; 
     }
-    // -----------------------
 
     const loadData = async () => {
       try {
@@ -48,7 +44,6 @@ export default function StandDetailPage() {
           getMenuForStand(standId)
         ]);
         setStand(standResponse.data);
-        // Validasi array di sini
         setMenuItems(Array.isArray(menuResponse.data) ? menuResponse.data : []);
         setError(null);
       } catch (err) {
@@ -60,7 +55,6 @@ export default function StandDetailPage() {
     loadData();
   }, [standId]);
 
-  // --- Handler Modal Item ---
   const handleCardClick = (menuItem) => {
     setCurrentItem(menuItem);
     const hasVariants = menuItem.variant_groups && menuItem.variant_groups.length > 0;
@@ -93,14 +87,8 @@ export default function StandDetailPage() {
     setCurrentItem(null);
   };
 
-  // --- Handler untuk CartDetailModal ---
-  const handleOpenCartDetail = () => {
-    setCartDetailModalOpen(true);
-  };
-
-  const handleCloseCartDetail = () => {
-    setCartDetailModalOpen(false);
-  };
+  const handleOpenCartDetail = () => setCartDetailModalOpen(true);
+  const handleCloseCartDetail = () => setCartDetailModalOpen(false);
 
   const handleUpdateCart = (cartItemUniqueId, newQuantity) => {
     if (newQuantity <= 0) {
@@ -125,11 +113,12 @@ export default function StandDetailPage() {
     setConfirmationModalOpen(true);
   };
 
-  // --- Handler Modal Konfirmasi (UPDATE DI SINI) ---
+  // ==========================================
+  // LOGIKA PEMBAYARAN MIDTRANS & CASH
+  // ==========================================
   const handleConfirmOrder = async (formData) => {
     if (!stand) return;
 
-    // Siapkan data sesuai permintaan Backend (OrderCreateSerializer)
     const payload = {
       tenant: stand.id,
       name: formData.name,
@@ -148,28 +137,53 @@ export default function StandDetailPage() {
       setLoading(true); 
       const response = await createOrder(payload);
       
-      // --- PERBAIKAN: SIMPAN TOKEN KE LOCALSTORAGE ---
-      // Ambil order uuid dan token rahasia dari respons backend
       const newOrderUuid = response.data.order.uuid;
       const guestToken = response.data.token;
 
       if (guestToken) {
-        // Simpan token dengan key unik agar bisa dibaca OrderStatusPage
         localStorage.setItem(`token_${newOrderUuid}`, guestToken);
       }
-      // ----------------------------------------------
       
-      // Arahkan ke halaman status pesanan
-      navigate(`/order-status/${newOrderUuid}`);
-      
-      // Kosongkan keranjang dan tutup modal
-      setCart([]);
-      setConfirmationModalOpen(false);
-      
+      // Jika Backend mengembalikan token Midtrans (artinya pilih Bayar Online)
+      if (response.data.snap_token) {
+        window.snap.pay(response.data.snap_token, {
+          onSuccess: function(result){
+            setCart([]);
+            setConfirmationModalOpen(false);
+            navigate(`/order-status/${newOrderUuid}`);
+          },
+          onPending: function(result){
+            setCart([]);
+            setConfirmationModalOpen(false);
+            navigate(`/order-status/${newOrderUuid}`);
+          },
+          onError: function(result){
+            alert("Pembayaran gagal! Silakan bayar kasir secara tunai atau coba pesan ulang.");
+            setCart([]);
+            setConfirmationModalOpen(false);
+            navigate(`/order-status/${newOrderUuid}`);
+          },
+          onClose: function(){
+            alert("Anda menutup pop-up sebelum menyelesaikan pembayaran. Pesanan masuk antrian Menunggu Pembayaran.");
+            setCart([]);
+            setConfirmationModalOpen(false);
+            navigate(`/order-status/${newOrderUuid}`);
+          }
+        });
+      } else {
+        // Jika pembayarannya Tunai/Cash (langsung arahkan ke halaman status)
+        setCart([]);
+        setConfirmationModalOpen(false);
+        navigate(`/order-status/${newOrderUuid}`);
+      }
+
     } catch (err) {
       console.error("Gagal membuat pesanan:", err);
-      // ... (logika error message tetap sama)
-      alert(errorMsg);
+      let errorMsg = "Terjadi kesalahan saat memproses pesanan Anda.";
+      if (err.response && err.response.data) {
+        errorMsg = err.response.data.detail || JSON.stringify(err.response.data);
+      }
+      alert(`Gagal membuat pesanan: ${errorMsg}`);
     } finally {
       setLoading(false);
     }
