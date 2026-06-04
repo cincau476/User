@@ -42,7 +42,13 @@ apiClient.interceptors.request.use(
 );
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // PERBAIKAN: Ekstrak otomatis array 'results' jika format dari backend adalah pagination
+    if (response.data && response.data.results !== undefined) {
+      response.data = response.data.results;
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     
@@ -104,8 +110,6 @@ apiClient.interceptors.response.use(
   }
 );
 
-// ... (Export API lainnya tetap sama seperti sebelumnya) ...
-
 
 // ==========================================================
 // DAFTAR ENDPOINT API
@@ -131,10 +135,6 @@ export const verifyMfaLogin = (temp_token, otp_code) => {
   });
 };
 // -------------------------------------------------
-
-/**
- * Verifikasi OTP untuk menyelesaikan login
-
 
 /**
  * Mengambil daftar semua stand (tenant)
