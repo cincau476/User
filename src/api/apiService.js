@@ -1,7 +1,7 @@
 // src/api/apiService.js
 import axios from 'axios';
 
-export const BASE_URL =  '/api';
+export const BASE_URL = '/api';
 
 const apiClient = axios.create({
   baseURL: BASE_URL, 
@@ -59,13 +59,20 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
         
+        // --- TAMBAHAN: Pintu Terbuka untuk Guest ---
+        // Jika sedang mengakses detail pesanan dengan token guest, 
+        // JANGAN lakukan redirect ke login meski token expired/invalid.
+        if (originalRequest.url.includes('/orders/') && originalRequest.params?.token) {
+            return Promise.reject(error);
+        }
+
         // 1. JIKA SEDANG REFRESH: Masukkan request ini ke antrean (Queue)
         if (isRefreshing) {
             return new Promise(function(resolve, reject) {
                 failedQueue.push({resolve, reject});
             }).then(token => {
                 originalRequest.headers['Authorization'] = 'Bearer ' + token;
-                return apiClient(originalRequest); // Jalankan ulang setelah token baru didapat
+                return apiClient(originalRequest); 
             }).catch(err => {
                 return Promise.reject(err);
             });
@@ -76,8 +83,6 @@ apiClient.interceptors.response.use(
         isRefreshing = true;
 
         try {
-            // Panggil endpoint refresh. TIDAK PERLU mengirim body {refresh: ...}
-            // karena browser otomatis menempelkan HttpOnly Cookie berkat withCredentials: true
             const response = await axios.post(`${BASE_URL}/users/token/refresh/`, {}, {
                 withCredentials: true 
             });
@@ -85,23 +90,19 @@ apiClient.interceptors.response.use(
             const newAccessToken = response.data.access;
             localStorage.setItem('access_token', newAccessToken);
             
-            // Ubah header request yang gagal tadi dengan token baru
             apiClient.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;
             originalRequest.headers['Authorization'] = 'Bearer ' + newAccessToken;
             
-            // Buka gembok & jalankan semua request yang ngantre
             processQueue(null, newAccessToken);
             return apiClient(originalRequest);
 
         } catch (refreshError) {
-            // Refresh gagal (cookie hilang/expired/blacklist)
             processQueue(refreshError, null);
             localStorage.removeItem('access_token');
-            // Jika ada context, panggil fungsi logout. Jika tidak, force redirect:
+            // Force redirect hanya jika bukan halaman status pesanan
             window.location.href = '/login'; 
             return Promise.reject(refreshError);
         } finally {
-            // Pastikan gembok selalu dibuka di akhir proses
             isRefreshing = false;
         }
     }
@@ -110,84 +111,47 @@ apiClient.interceptors.response.use(
   }
 );
 
+// --- DAFTAR ENDPOINT API ---
 
-// ==========================================================
-// DAFTAR ENDPOINT API
-// Sinkron dengan prefix path di canteen/urls.py
-// ==========================================================
-
-/**
- * Login User (untuk Seller/Kasir/Admin)
- * Pastikan backend di endpoint /users/login/ mengembalikan { access: "...", refresh: "..." }
- */
 export const loginUser = (credentials) => {
   return apiClient.post('/users/login/', credentials);
 };
 
-// --- TAMBAHKAN FUNGSI INI UNTUK VERIFIKASI MFA ---
-/**
- * Verifikasi OTP untuk menyelesaikan login MFA
- */
 export const verifyMfaLogin = (temp_token, otp_code) => {
   return apiClient.post('/users/login/mfa/verify/', {
     temp_token,
     otp_code
   });
 };
-// -------------------------------------------------
 
-/**
- * Mengambil daftar semua stand (tenant)
- */
 export const getStands = () => {
   return apiClient.get('/tenants/stands/'); 
 };
 
-/**
- * Mengambil detail satu stand
- */
 export const getStandDetails = (standId) => {
   return apiClient.get(`/tenants/stands/${standId}/`);
 };
 
-/**
- * Mengambil list menu untuk satu stand
- */
 export const getMenuForStand = (standId) => {
   return apiClient.get(`/tenants/stands/${standId}/menus/`);
 };
 
-/**
- * Membuat pesanan baru
- */
 export const createOrder = (orderData) => {
   return apiClient.post('/orders/create/', orderData); 
 };
 
-/**
- * Mengambil detail pesanan
- * Menerima parameter 'token' untuk Guest Access jika tidak login
- */
 export const getOrderDetails = (orderUuid, token) => {
   const config = {};
-  
   if (token) {
     config.params = { token: token };
   }
-  
   return apiClient.get(`/orders/${orderUuid}/`, config);
 };
 
-/**
- * Membatalkan pesanan
- */
 export const cancelOrder = (orderUuid) => {
   return apiClient.post(`/orders/${orderUuid}/cancel/`);
 };
 
-/**
- * Mengambil menu-menu populer
- */
 export const getPopularMenus = () => {
   return apiClient.get('/orders/popular-menus/'); 
 };
