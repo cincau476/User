@@ -22,7 +22,7 @@ export default function ConfirmationModal({ cart, stand, onClose, onSubmit }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState(''); 
   const [phone, setPhone] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('ONLINE'); // Default ke ONLINE
+  const [paymentMethod, setPaymentMethod] = useState('TRANSFER'); // Default ke ONLINE
 
   // Hitung total harga dari keranjang
   const totalPrice = useMemo(() => {
@@ -145,8 +145,8 @@ export default function ConfirmationModal({ cart, stand, onClose, onSubmit }) {
                   <input
                     type="radio"
                     name="payment"
-                    value="ONLINE"
-                    checked={paymentMethod === 'ONLINE'}
+                    value="TRANSFER"
+                    checked={paymentMethod === 'TRANSFER'}
                     onChange={(e) => setPaymentMethod(e.target.value)}
                     className="form-radio h-5 w-5 text-orange-500 bg-gray-600 border-gray-500"
                   />
