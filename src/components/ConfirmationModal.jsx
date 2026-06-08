@@ -144,12 +144,12 @@ export default function ConfirmationModal({ cart, stand, onClose, onSubmit }) {
                   <input
                     type="radio"
                     name="payment"
-                    value="TRANSFER"
-                    checked={paymentMethod === 'TRANSFER'}
+                    value="ONLINE" // <--- UBAH DI SINI (Sebelumnya TRANSFER)
+                    checked={paymentMethod === 'ONLINE'} // <--- UBAH DI SINI
                     onChange={(e) => setPaymentMethod(e.target.value)}
                     className="form-radio h-5 w-5 text-orange-500 bg-gray-600 border-gray-500"
                   />
-                  <span className="ml-3">QRIS / Transfer Bank</span>
+                  <span className="ml-3">Bayar Online (QRIS, E-Wallet, M-Banking)</span> {/* <--- UBAH TEKSNYA */}
                 </label>
                 <label className="flex items-center p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600">
                   <input
@@ -160,11 +160,10 @@ export default function ConfirmationModal({ cart, stand, onClose, onSubmit }) {
                     onChange={(e) => setPaymentMethod(e.target.value)}
                     className="form-radio h-5 w-5 text-orange-500 bg-gray-600 border-gray-500"
                   />
-                  <span className="ml-3">Tunai (Cash)</span>
+                  <span className="ml-3">Tunai (Bayar di Kasir)</span>
                 </label>
               </div>
             </div>
-          </div>
 
           {/* Tombol Submit */}
           <div className="p-4 border-t border-gray-700 bg-gray-800">
