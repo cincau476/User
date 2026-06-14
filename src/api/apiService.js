@@ -52,10 +52,17 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // Cegah loop jika request ke /refresh itu sendiri yang gagal
-    if (originalRequest.url.includes('/users/token/refresh/')) {
+
+    
+    // --- PERBAIKAN DI SINI ---
+    // Cegah interceptor ikut campur jika gagalnya saat mencoba LOGIN atau REFRESH
+    if (
+        originalRequest.url.includes('/users/token/refresh/') || 
+        originalRequest.url.includes('/users/login/') // <-- INI YANG TERLEWAT
+    ) {
         return Promise.reject(error);
     }
+
 
     if (error.response?.status === 401 && !originalRequest._retry) {
         
