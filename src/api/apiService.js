@@ -150,7 +150,8 @@ export const createOrder = (orderData) => {
 export const getOrderDetails = (orderUuid, token) => {
   const config = {};
   if (token) {
-    config.params = { token: token };
+    // Kirim secara rahasia lewat Header HTTP
+    config.headers = { 'X-Order-Token': token }; 
   }
   return apiClient.get(`/orders/${orderUuid}/`, config);
 };
