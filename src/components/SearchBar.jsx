@@ -98,15 +98,21 @@ export default function SearchBar() {
                   }}
                 >
                   <img 
-                    src={item.image || '/vite.svg'} // Fallback image
+                    src={item.imageUrl || '/vite.svg'} // Menggunakan imageUrl dari serializer
                     alt={item.name} 
                     className="w-14 h-14 rounded-lg object-cover bg-gray-700"
                   />
                   <div className="flex-1 text-left">
                     <h4 className="text-white font-semibold text-sm">{item.name}</h4>
-                    <p className="text-gray-400 text-xs line-clamp-1 mt-0.5">{item.description}</p>
+                    
+                    {/* --- PERBAIKAN 2: Tampilkan Nama Stand --- */}
+                    <p className="text-orange-400 text-xs font-medium my-0.5">
+                      📍 {item.tenant_name}
+                    </p>
+                    
+                    <p className="text-gray-400 text-xs line-clamp-1">{item.description}</p>
                   </div>
-                  <div className="text-orange-400 font-bold text-sm">
+                  <div className="text-white font-bold text-sm">
                     Rp {parseInt(item.price).toLocaleString('id-ID')}
                   </div>
                 </li>
