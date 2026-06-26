@@ -94,7 +94,7 @@ export default function SearchBar() {
                   onClick={() => {
                     // Tindakan saat user mengklik hasil pencarian
                     // Anda bisa arahkan ke halaman detail stand dengan id = item.tenant
-                    window.location.href = `/stands/${item.tenant}`;
+                    window.location.href = `/stand/${item.tenant}`;
                   }}
                 >
                   <img 
