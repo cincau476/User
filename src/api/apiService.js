@@ -164,4 +164,8 @@ export const getPopularMenus = () => {
   return apiClient.get('/orders/popular-menus/'); 
 };
 
+export const searchMenus = (query) => {
+  return apiClient.get(`/tenants/menus/?search=${query}`); 
+};
+
 export default apiClient;
