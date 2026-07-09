@@ -28,7 +28,6 @@ export default function LoginPage() {
 
   // Fungsi pembantu untuk memproses penyimpanan token dan pengalihan (redirect) rute setelah sukses
   const handleLoginSuccess = (data) => {
-    // Sinkronisasi penamaan parameter key token 'access' dari SimpleJWT backend dan properti 'token' bawaan
     const finalToken = data.access || data.token;
     const user = data.user;
 
@@ -37,29 +36,23 @@ export default function LoginPage() {
       return;
     }
 
-    // Menyimpan data ke sessionStorage agar otomatis terhapus saat tab browser ditutup
-    sessionStorage.setItem('token', finalToken);
+    // Set token di sessionStorage (jika masih butuh untuk SPA saat ini)
+    sessionStorage.setItem('access_token', finalToken);
     sessionStorage.setItem('user', JSON.stringify(user));
 
-    const baseUrl = window.location.origin ; 
+    const baseUrl = window.location.origin; 
 
-    // Logika pengalihan rute berdasarkan hak akses (role) pengguna
+    // REDIRECT TANPA MEMBAWA TOKEN DI URL
     if (user.role === 'seller' || user.role === 'tenant') {
-      sessionStorage.setItem('tenant_token', finalToken);
-      sessionStorage.setItem('tenant_user', JSON.stringify(user));
-      window.location.href = `${baseUrl}/tenant/external-login?token=${finalToken}`; 
+      window.location.href = `${baseUrl}/tenant/`; 
     } 
     else if (user.role === 'cashier') {
-      sessionStorage.setItem('kasir_token', finalToken);
-      sessionStorage.setItem('kasir_user', JSON.stringify(user));
-      window.location.href = `${baseUrl}/kasir/pos?token=${finalToken}`;
+      window.location.href = `${baseUrl}/kasir/`;
     } 
     else if (user.role === 'admin') {
-      sessionStorage.setItem('admin_token', finalToken);
-      window.location.href = `${baseUrl}/admin/?token=${finalToken}`; 
+      window.location.href = `${baseUrl}/admin/`; 
     }
     else {
-      // Akses untuk pembeli/customer biasa
       navigate('/');
     }
   };
