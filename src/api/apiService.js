@@ -32,7 +32,9 @@ const processQueue = (error, token = null) => {
 
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
+    // Ubah dari localStorage menjadi sessionStorage
+    // dan pastikan key-nya konsisten ('access_token')
+    const token = sessionStorage.getItem('access_token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`; 
     }
@@ -95,7 +97,9 @@ apiClient.interceptors.response.use(
             });
             
             const newAccessToken = response.data.access;
-            localStorage.setItem('access_token', newAccessToken);
+            
+            // ✅ PERBAIKAN: Gunakan sessionStorage agar sinkron dengan request interceptor
+            sessionStorage.setItem('access_token', newAccessToken);
             
             apiClient.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken;
             originalRequest.headers['Authorization'] = 'Bearer ' + newAccessToken;
@@ -105,7 +109,11 @@ apiClient.interceptors.response.use(
 
         } catch (refreshError) {
             processQueue(refreshError, null);
-            localStorage.removeItem('access_token');
+            
+            // ✅ PERBAIKAN: Gunakan sessionStorage untuk proses pembersihan
+            sessionStorage.removeItem('access_token');
+            sessionStorage.removeItem('user'); // Opsional: Bersihkan juga data user jika ada
+            
             // Force redirect hanya jika bukan halaman status pesanan
             window.location.href = '/login'; 
             return Promise.reject(refreshError);
