@@ -141,7 +141,7 @@ export default function StandDetailPage() {
       const guestToken = response.data.token;
 
       if (guestToken) {
-        localStorage.setItem(`token_${newOrderUuid}`, guestToken);
+        sessionStorage.setItem(`token_${newOrderUuid}`, guestToken);
       }
       
       // Jika Backend mengembalikan token Midtrans (artinya pilih Bayar Online)
