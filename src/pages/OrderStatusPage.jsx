@@ -26,7 +26,7 @@ export default function OrderStatusPage() {
     const fetchOrder = async () => {
       try {
         // Mengambil guest token jika ada untuk bypass permission IsGuestOrderOwner
-        const guestToken = localStorage.getItem(`token_${orderUuid}`);
+        const guestToken = sessionStorage.getItem(`token_${orderUuid}`);
         const response = await getOrderDetails(orderUuid, guestToken);
         setOrder(response.data);
       } catch (err) {
