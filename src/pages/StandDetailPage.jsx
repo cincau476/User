@@ -119,12 +119,17 @@ export default function StandDetailPage() {
   const handleConfirmOrder = async (formData) => {
     if (!stand) return;
 
+    // 1. TARIK TOKEN DARI MEMORI BROWSER
+    const savedToken = sessionStorage.getItem('table_token');
+
     const payload = {
       tenant: stand.id,
       name: formData.name,
       email: formData.email,
       phone: formData.phone || "",
       payment_method: formData.paymentMethod, 
+      // 2. MASUKKAN TOKEN KE PAYLOAD (Jika kosong, otomatis jadi Takeaway)
+      token: savedToken || "", 
       items: cart.map(item => ({
           menu_item: item.menuItemId,
           qty: item.quantity,
@@ -136,6 +141,10 @@ export default function StandDetailPage() {
     try {
       setLoading(true); 
       const response = await createOrder(payload);
+
+      // 3. HANGUSKAN TOKEN MEJA SETELAH PESANAN SUKSES TERCATAT DI DATABASE!
+      // Ini wajib agar pesanan berikutnya tidak nyangkut di meja ini.
+      sessionStorage.removeItem('table_token');
       
       const newOrderUuid = response.data.order.uuid;
       const guestToken = response.data.token;
