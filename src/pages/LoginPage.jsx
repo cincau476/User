@@ -35,9 +35,15 @@ export default function LoginPage() {
       setError("Data otentikasi dari server tidak valid.");
       return;
     }
+    const tokenKey = {
+      admin: "admin_token",
+      seller: "tenant_token",
+      tenant: "tenant_token",
+      cashier: "kasir_token",
+    }[user.role];
 
     // Set token di sessionStorage (jika masih butuh untuk SPA saat ini)
-    sessionStorage.setItem('access_token', finalToken);
+    sessionStorage.setItem(tokenKey, finalToken);
     sessionStorage.setItem('user', JSON.stringify(user));
 
     const baseUrl = window.location.origin; 
