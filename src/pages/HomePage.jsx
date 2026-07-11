@@ -44,7 +44,7 @@ export default function HomePage() {
             // 4. Bersihkan URL (hapus token dari bar navigasi agar rapi)
             searchParams.delete('token');
             setSearchParams(searchParams, { replace: true });
-
+        }
         // --- PERBAIKAN END ---
 
         setError(null);
