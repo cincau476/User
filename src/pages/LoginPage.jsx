@@ -44,13 +44,13 @@ export default function LoginPage() {
 
     // REDIRECT TANPA MEMBAWA TOKEN DI URL
     if (user.role === 'seller' || user.role === 'tenant') {
-      window.location.href = `${baseUrl}/tenant/`; 
+      `/tenant/`; 
     } 
     else if (user.role === 'cashier') {
-      window.location.href = `${baseUrl}/kasir/`;
+      `/kasir/`;
     } 
     else if (user.role === 'admin') {
-      window.location.href = `${baseUrl}/admin/`; 
+      `/admin/`; 
     }
     else {
       navigate('/');
