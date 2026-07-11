@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Header from '../components/Header';
 import SearchBar from '../components/SearchBar';
@@ -11,6 +12,7 @@ export default function HomePage() {
   const [stands, setStands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     const loadData = async () => {
@@ -33,6 +35,16 @@ export default function HomePage() {
         const standsData = standsResponse.data.results || standsResponse.data;
         setStands(Array.isArray(standsData) ? standsData : []);
 
+        const token = searchParams.get('token');
+
+        if (token) {
+            // 3. Simpan ke sessionStorage
+            sessionStorage.setItem('table_token', token);
+
+            // 4. Bersihkan URL (hapus token dari bar navigasi agar rapi)
+            searchParams.delete('token');
+            setSearchParams(searchParams, { replace: true });
+
         // --- PERBAIKAN END ---
 
         setError(null);
@@ -44,7 +56,7 @@ export default function HomePage() {
       }
     };
     loadData();
-  }, []);
+  }, [searchParams, setSearchParams]);
   
   if (error) {
     return (
