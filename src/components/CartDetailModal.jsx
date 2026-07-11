@@ -4,6 +4,40 @@ import QuantityStepper from './QuantityStepper';
 
 // --- Helper Components (Salin dari AddToCartModal.jsx) ---
 
+const handleCheckout = async (e) => {
+    e.preventDefault();
+
+    // 1. Tarik token meja dari memori
+    const savedToken = sessionStorage.getItem('table_token');
+
+    // 2. Masukkan ke dalam payload. Sesuaikan nama variabel dengan state Anda
+    const orderPayload = {
+        tenant: tenantId, // Sesuaikan dengan variabel state Anda
+        name: customerName,
+        email: customerEmail,
+        phone: customerPhone,
+        payment_method: paymentMethod,
+        items: cartItems,
+        
+        // 3. Tambahkan token ke backend (kirim string kosong jika tidak ada)
+        token: savedToken || "" 
+    };
+
+    try {
+        // Tembak API
+        const response = await apiService.post('/orders/create/', orderPayload);
+
+        // 4. PENTING: Hanguskan token setelah sukses!
+        sessionStorage.removeItem('table_token');
+
+        alert("Pesanan berhasil!");
+        // Tutup modal / kosongkan cart
+        
+    } catch (error) {
+        console.error("Gagal pesan:", error);
+        alert("Gagal memproses pesanan.");
+    }
+};
 // Ikon X untuk menutup
 const CloseIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
