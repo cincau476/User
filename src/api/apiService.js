@@ -1,5 +1,6 @@
 // src/api/apiService.js
 import axios from 'axios';
+import { getUserLocation } from '../api/geolocation';
 
 export const BASE_URL = '/api';
 
@@ -31,12 +32,23 @@ const processQueue = (error, token = null) => {
 };
 
 apiClient.interceptors.request.use(
-  (config) => {
+  async (config) => {
     // Ubah dari localStorage menjadi sessionStorage
     // dan pastikan key-nya konsisten ('access_token')
     const token = sessionStorage.getItem('access_token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`; 
+    }
+    if (config.url.includes('/stand/') || config.url.includes('/orders/create/')) {
+      try {
+        const location = await getUserLocation();
+        // Sisipkan koordinat ke dalam Custom Headers
+        config.headers['X-User-Latitude'] = location.latitude.toString();
+        config.headers['X-User-Longitude'] = location.longitude.toString();
+      } catch (error) {
+        // Jika gagal mendapatkan lokasi (ditolak user atau error GPS), batalkan request
+        return Promise.reject(error);
+      }
     }
     return config;
   },
