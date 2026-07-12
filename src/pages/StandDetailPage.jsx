@@ -19,7 +19,10 @@ export default function StandDetailPage() {
   const [stand, setStand] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Pisahkan error biasa dengan error ABAC (Geolokasi/Waktu)
   const [error, setError] = useState(null);
+  const [abacError, setAbacError] = useState(null); 
 
   const [cart, setCart] = useState([]);
   
@@ -39,19 +42,25 @@ export default function StandDetailPage() {
     const loadData = async () => {
       try {
         setLoading(true);
+        // apiClient otomatis meminta izin lokasi (GPS) di sini sebelum mengirim request
         const [standResponse, menuResponse] = await Promise.all([
           getStandDetails(standId),
           getMenuForStand(standId)
         ]);
         setStand(standResponse.data);
         setMenuItems(Array.isArray(menuResponse.data) ? menuResponse.data : []);
+        setAbacError(null);
         setError(null);
       } catch (err) {
-        setError("Gagal memuat data stand.");
+        console.error("Gagal memuat data:", err);
+        // Tangkap pesan error dari Interceptor (GPS ditolak) ATAU Backend (Luar radius / Tutup)
+        const errorMsg = err.response?.data?.detail || err.message || "Gagal memuat data stand.";
+        setAbacError(errorMsg);
       } finally {
         setLoading(false);
       }
     };
+    
     loadData();
   }, [standId]);
 
@@ -140,10 +149,10 @@ export default function StandDetailPage() {
     
     try {
       setLoading(true); 
+      // GPS juga akan dicek ulang di sini (melalui interceptor createOrder)
       const response = await createOrder(payload);
 
       // 3. HANGUSKAN TOKEN MEJA SETELAH PESANAN SUKSES TERCATAT DI DATABASE!
-      // Ini wajib agar pesanan berikutnya tidak nyangkut di meja ini.
       sessionStorage.removeItem('table_token');
       
       const newOrderUuid = response.data.order.uuid;
@@ -191,6 +200,8 @@ export default function StandDetailPage() {
       let errorMsg = "Terjadi kesalahan saat memproses pesanan Anda.";
       if (err.response && err.response.data) {
         errorMsg = err.response.data.detail || JSON.stringify(err.response.data);
+      } else if (err.message) {
+        errorMsg = err.message;
       }
       alert(`Gagal membuat pesanan: ${errorMsg}`);
     } finally {
@@ -199,13 +210,51 @@ export default function StandDetailPage() {
   };
 
   // --- Render ---
+  
+  // 1. Tampilan Loading dengan Indikator GPS
   if (loading && !isConfirmationModalOpen) { 
-    return <Layout><p className="text-center">Memuat...</p></Layout>;
-  }
-  if (error) {
-    return <Layout><p className="text-center text-red-400">{error}</p></Layout>;
+    return (
+      <Layout>
+        <div className="flex flex-col h-[70vh] items-center justify-center">
+          <p className="text-lg font-semibold animate-pulse text-blue-600">
+            📍 Memeriksa Lokasi & Memuat Menu...
+          </p>
+        </div>
+      </Layout>
+    );
   }
 
+  // 2. Tampilan Error ABAC (Geofence / Waktu / Tolak Izin GPS)
+  if (abacError) {
+    return (
+      <Layout>
+        <div className="flex flex-col h-[70vh] items-center justify-center p-6 text-center">
+          <div className="text-6xl mb-4">🛑</div>
+          <h1 className="text-2xl font-bold text-red-600 mb-2">Akses Ditolak</h1>
+          <p className="text-gray-600 mb-6">{abacError}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-colors"
+          >
+            Coba Ulangi
+          </button>
+        </div>
+      </Layout>
+    );
+  }
+
+  // 3. Tampilan Error Umum (Misal: ID Tidak Valid)
+  if (error) {
+    return (
+      <Layout>
+        <div className="flex h-[70vh] items-center justify-center">
+          <p className="text-center text-red-500 font-medium">{error}</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  // 4. Tampilan Normal (Lolos ABAC)
   return (
     <Layout>
       <div className="pb-32">
