@@ -39,7 +39,7 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`; 
     }
-    if (config.url.includes('/stand/') || config.url.includes('/orders/create/')) {
+    if (config.url.includes('/stands/') || config.url.includes('/orders/create/')) {
       try {
         const location = await getUserLocation();
         // Sisipkan koordinat ke dalam Custom Headers
@@ -47,7 +47,7 @@ apiClient.interceptors.request.use(
         config.headers['X-User-Longitude'] = location.longitude.toString();
       } catch (error) {
         // Jika gagal mendapatkan lokasi (ditolak user atau error GPS), batalkan request
-        return Promise.reject(error);
+        return Promise.reject(new Error(error.message || "Gagal mendapatkan lokasi."));
       }
     }
     return config;
@@ -66,8 +66,10 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
+    if (!originalRequest || !originalRequest.url) {
+        return Promise.reject(error);
+    }
 
-    
     // --- PERBAIKAN DI SINI ---
     // Cegah interceptor ikut campur jika gagalnya saat mencoba LOGIN atau REFRESH
     if (
