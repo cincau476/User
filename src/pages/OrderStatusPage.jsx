@@ -61,8 +61,8 @@ export default function OrderStatusPage() {
   );
 
   // Mapping data sesuai serializer backend
-  const customerName = order.customer?.name || "Pelanggan";
-  const customerEmail = order.customer?.email || "Email Anda";
+  const customerName = order.customer_name || order.guest_name || order.customer?.name || order.user?.username || "Pelanggan";
+  const customerEmail = order.customer_email || order.guest_email || order.customer?.email || order.user?.email || "Email Anda";
   const isCash = order.payment_method === 'CASH';
   const isPaid = ['PAID', 'PROCESSING', 'READY', 'COMPLETED'].includes(order.status);
 
