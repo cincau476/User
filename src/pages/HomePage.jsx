@@ -40,10 +40,20 @@ export default function HomePage() {
         if (token) {
             // 3. Simpan ke sessionStorage
             sessionStorage.setItem('table_token', token);
+            sessionStorage.setItem('order_type', 'DINE_IN');
 
             // 4. Bersihkan URL (hapus token dari bar navigasi agar rapi)
             searchParams.delete('token');
             setSearchParams(searchParams, { replace: true });
+        } else {
+            // Jika BUKAN dari Scan QR Meja (URL biasa)
+            // Cek apakah sebelumnya sudah ada token di session.
+            const existingToken = sessionStorage.getItem('table_token');
+            
+            // Jika tidak ada riwayat token sama sekali, paksa mode ke TAKEAWAY
+            if (!existingToken) {
+                sessionStorage.setItem('order_type', 'TAKEAWAY');
+            }
         }
         // --- PERBAIKAN END ---
 
