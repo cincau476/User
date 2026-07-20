@@ -128,8 +128,9 @@ export default function StandDetailPage() {
   const handleConfirmOrder = async (formData) => {
     if (!stand) return;
 
-    // 1. TARIK TOKEN DARI MEMORI BROWSER
+    // 1. TARIK TOKEN & TIPE PESANAN DARI MEMORI BROWSER
     const savedToken = sessionStorage.getItem('table_token');
+    const savedOrderType = sessionStorage.getItem('order_type') || 'TAKEAWAY'; // Fallback otomatis ke TAKEAWAY
 
     const payload = {
       tenant: stand.id,
@@ -137,8 +138,13 @@ export default function StandDetailPage() {
       email: formData.email,
       phone: formData.phone || "",
       payment_method: formData.paymentMethod, 
-      // 2. MASUKKAN TOKEN KE PAYLOAD (Jika kosong, otomatis jadi Takeaway)
+      
+      // 2. TAMBAHKAN ORDER TYPE KE PAYLOAD
+      order_type: savedOrderType, 
+
+      // 3. MASUKKAN TOKEN KE PAYLOAD (Hanya dikirim jika ada)
       token: savedToken || "", 
+      
       items: cart.map(item => ({
           menu_item: item.menuItemId,
           qty: item.quantity,
@@ -152,8 +158,10 @@ export default function StandDetailPage() {
       // GPS juga akan dicek ulang di sini (melalui interceptor createOrder)
       const response = await createOrder(payload);
 
-      // 3. HANGUSKAN TOKEN MEJA SETELAH PESANAN SUKSES TERCATAT DI DATABASE!
+      // 4. HANGUSKAN TOKEN MEJA SETELAH PESANAN SUKSES TERCATAT DI DATABASE!
       sessionStorage.removeItem('table_token');
+      // Opsional: Anda juga bisa menghapus order_type jika ingin mereset sesi
+      // sessionStorage.removeItem('order_type');
       
       const newOrderUuid = response.data.order.uuid;
       const guestToken = response.data.token;
@@ -199,6 +207,7 @@ export default function StandDetailPage() {
       console.error("Gagal membuat pesanan:", err);
       let errorMsg = "Terjadi kesalahan saat memproses pesanan Anda.";
       if (err.response && err.response.data) {
+        // Ekstrak pesan error dari backend agar lebih mudah dibaca
         errorMsg = err.response.data.detail || JSON.stringify(err.response.data);
       } else if (err.message) {
         errorMsg = err.message;
